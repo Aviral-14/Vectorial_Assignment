@@ -118,6 +118,41 @@
             50% { opacity: 1; }
             100% { opacity: 0.2; }
         }
+
+        .story-container {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+        }
+
+        .story-category {
+            font-size: 1.2em;
+            color: #fff;
+            margin-bottom: 10px;
+            text-transform: capitalize;
+        }
+
+        .story-content {
+            white-space: pre-wrap;
+            line-height: 1.6;
+        }
+
+        .metadata {
+            font-size: 0.9em;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .error-message {
+            color: #ff4444;
+            background: rgba(255, 68, 68, 0.1);
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
@@ -185,13 +220,43 @@
 
                 const data = await response.json();
                 
-                results.innerHTML = `
-                    <h2>Generated Stories:</h2>
-                    <pre>${JSON.stringify(data.stories, null, 2)}</pre>
-                `;
+                if (data.status === 'success') {
+                    let html = '<h2>Generated Stories:</h2>';
+                    
+                    // Display stories
+                    data.stories.forEach(story => {
+                        html += `
+                            <div class="story-container">
+                                <div class="story-category">${story.category}</div>
+                                <div class="story-content">${story.story}</div>
+                            </div>
+                        `;
+                    });
+
+                    // Add metadata
+                    html += `
+                        <div class="metadata">
+                            <p>Processed ${data.metadata.document_count} document(s)</p>
+                            <p>Generated ${data.metadata.generated_stories} stories</p>
+                        </div>
+                    `;
+
+                    results.innerHTML = html;
+                } else {
+                    results.innerHTML = `
+                        <div class="error-message">
+                            Error: ${data.message || 'Unknown error occurred'}
+                        </div>
+                    `;
+                }
+                
                 results.style.display = 'block';
             } catch (error) {
-                results.innerHTML = `<p style="color: #ff4444;">Error: ${error.message}</p>`;
+                results.innerHTML = `
+                    <div class="error-message">
+                        Error: ${error.message}
+                    </div>
+                `;
                 results.style.display = 'block';
             } finally {
                 loading.style.display = 'none';
