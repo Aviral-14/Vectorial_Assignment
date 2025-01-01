@@ -36,25 +36,17 @@ class AutoDocumentProcessor:
                 f.write(f"Category: {story.get('category', 'Unknown')}\n")
                 f.write(f"Story:\n{story.get('story', 'No story generated')}\n")
 
-    async def process_documents(self, documents: Dict[str, str]) -> List[Dict]:
+    async def process_documents(self, documents: Dict[str, str]) -> Dict:
         """Process documents with improved workflow and error handling"""
         try:
-            # Save input documents
-            self.save_intermediate_results("01_input_documents", documents)
-            logging.info(f"Processing {len(documents)} documents...")
-
-            # Extract topics
-            logging.info("Starting topic extraction...")
+            # Extract topics synchronously (OpenAI handles its own async)
             topics = self.topic_extractor.extract_topics(documents)
-            self.save_intermediate_results("02_topic_extraction", topics)
             
             if not any(topics.get(key) for key in ['concerns', 'wins', 'opportunities']):
                 raise ValueError("No topics were extracted from documents")
 
             # Collect evidence
-            logging.info("Collecting evidence...")
             evidence = self.evidence_collector.collect_evidence(documents, topics)
-            self.save_intermediate_results("03_evidence_collection", evidence)
 
             # Generate stories
             stories = []
@@ -62,28 +54,24 @@ class AutoDocumentProcessor:
             
             for category in categories:
                 if topics.get(category):
-                    logging.info(f"Generating story for {category}")
                     story = self.story_generator.generate_story(
                         category=category,
                         topics=topics[category],
                         evidence=evidence
                     )
                     if story:
-                        stories.append(story)
+                        stories.append({
+                            "category": category,
+                            "story": story
+                        })
 
-            # Save final stories
-            self.save_intermediate_results("04_final_stories", stories)
-            
-            # Generate readable output
-            self.save_readable_output(stories)
-            
             return {
                 "status": "success",
                 "stories": stories,
                 "metadata": {
                     "document_count": len(documents),
                     "generated_stories": len(stories),
-                    "categories": categories
+                    "categories": [s["category"] for s in stories]
                 }
             }
 
